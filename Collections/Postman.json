@@ -1,0 +1,342 @@
+{
+  "info": {
+    "name": "GamingCorner API",
+    "_postman_id": "b7f6a4b2-0c1a-4d9a-8f3f-123456789abc",
+    "description": "Colección para probar Auth, Public, User y Admin.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password (demo)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"newPassword\": \"nuevoPass123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Listar juegos (search/filters)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/games?search=&genre=&platform=&page=1&limit=12",
+              "host": ["{{baseUrl}}"],
+              "path": ["games"],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "genre", "value": "" },
+                { "key": "platform", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "12" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Top juegos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/games/top?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "top"],
+              "query": [{ "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Autocomplete códigos/títulos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/games/search-codes?q=PC-",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "search-codes"],
+              "query": [{ "key": "q", "value": "PC-" }]
+            }
+          }
+        },
+        {
+          "name": "Detalle de juego",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/games/{{idOrCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{idOrCode}}"]
+            }
+          }
+        },
+        {
+          "name": "Imágenes del juego",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/games/{{idOrCode}}/images",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{idOrCode}}", "images"]
+            }
+          }
+        },
+        {
+          "name": "Comentarios (listar)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/games/{{idOrCode}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{idOrCode}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Patch notes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/games/{{idOrCode}}/patchnotes",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{idOrCode}}", "patchnotes"]
+            }
+          }
+        },
+        {
+          "name": "Géneros (público)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/genres",
+              "host": ["{{baseUrl}}"],
+              "path": ["genres"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User (auth requerido)",
+      "item": [
+        {
+          "name": "Crear comentario",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/games/{{idOrCode}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{idOrCode}}", "comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Gran juego, 10/10\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Poner/Actualizar rating (1..5)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/games/{{idOrCode}}/rating",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{idOrCode}}", "rating"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin (admin token)",
+      "item": [
+        {
+          "name": "Listar géneros (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/genres",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "genres"]
+            }
+          }
+        },
+        {
+          "name": "Crear género",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/genres",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "genres"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Roguelike\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar género",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/genres/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "genres", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Crear juego",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/games",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "games"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"PEAK\",\n  \"platform\": \"PC\",\n  \"release_date\": \"2025-03-10\",\n  \"developer\": \"Aggro Crab\",\n  \"publisher\": \"Aggro Crab, Landfall\",\n  \"trailer_url\": \"https://www.youtube.com/embed/XXXX\",\n  \"description\": \"Juego de ejemplo\",\n  \"steam_app_id\": 0,\n  \"genre_ids\": [1,2]\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar juego",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/games/{{idOrCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "games", "{{idOrCode}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"PEAK Updated\",\n  \"platform\": \"PC\",\n  \"release_date\": \"2025-03-10\",\n  \"developer\": \"Aggro Crab, Landfall\",\n  \"publisher\": \"Aggro Crab, Landfall\",\n  \"trailer_url\": \"\",\n  \"description\": \"Descripción actualizada\",\n  \"steam_app_id\": null,\n  \"genre_ids\": [1]\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar juego",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/games/{{idOrCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "games", "{{idOrCode}}"]
+            }
+          }
+        },
+        {
+          "name": "Subir imágenes (multi)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/games/{{idOrCode}}/images",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "games", "{{idOrCode}}", "images"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "files", "type": "file", "src": [] },
+                { "key": "files", "type": "file", "src": [] },
+                { "key": "files", "type": "file", "src": [] }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar imagen de juego",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/games/{{idOrCode}}/images/{{file}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "games", "{{idOrCode}}", "images", "{{file}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

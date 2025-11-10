@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ver Productos</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">🏪 Almacén</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link" href="ver_productos.html">Ver Productos</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="insertar_producto.html">Insertar</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="consultar_producto.html">Consultar</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="editar_producto.html">Editar</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="borrar_producto.html">Eliminar</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mt-5">
+      <h2 class="text-center mb-4">Lista de Productos</h2>
+      <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Cantidad</th>
+          </tr>
+        </thead>
+        <tbody id="productos-table-body"></tbody>
+      </table>
+      <div class="text-center mt-4">
+        <a href="index.html" class="btn btn-secondary">Volver</a>
+      </div>
+    </div>
+
+    <script>
+      fetch("http://localhost:3000/api/productos")
+        .then((response) => response.json())
+        .then((data) => {
+          const tableBody = document.getElementById("productos-table-body");
+          data.forEach((producto) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+            <td>${producto.id}</td>
+            <td>${producto.nombre}</td>
+            <td>$${producto.precio}</td>
+            <td>${producto.cantidad} SKU</td>
+          `;
+            tableBody.appendChild(row);
+          });
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    </script>
+  </body>
+</html>

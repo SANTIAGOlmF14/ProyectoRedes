@@ -1,0 +1,23 @@
+:root {
+  --gc-primary: #0d6efd;
+  --gc-bg: #f5f7fb;
+  --gc-dark: #111;
+}
+
+/* Reset básico */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial,
+    sans-serif;
+  background: var(--gc-bg);
+  color: var(--gc-dark);
+  margin: 0;
+}
+
+/* Pequeño realce para el branding (Bootstrap cubre el resto) */
+.navbar-brand {
+  font-weight: 700;
+}

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Admin • Agregar Juego</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 768px) {
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+    <div class="container py-4">
+      <h3 class="mb-3">Agregar Juego</h3>
+      <div class="two-col">
+        <div>
+          <label class="form-label">Título</label
+          ><input id="title" class="form-control" />
+        </div>
+        <div>
+          <label class="form-label">Plataforma</label>
+          <select id="platform" class="form-select">
+            <option>PC</option>
+            <option>PS</option>
+            <option>XBOX</option>
+            <option>SWI</option>
+            <option>MBL</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Fecha de lanzamiento</label
+          ><input id="release_date" type="date" class="form-control" />
+        </div>
+        <div>
+          <label class="form-label">Steam App ID (opcional)</label
+          ><input id="steam_app_id" type="number" class="form-control" />
+        </div>
+        <div>
+          <label class="form-label">Developer(s)</label
+          ><input id="developer" class="form-control" />
+        </div>
+        <div>
+          <label class="form-label">Publisher(s)</label
+          ><input id="publisher" class="form-control" />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Trailer (URL embebible)</label
+          ><input
+            id="trailer_url"
+            class="form-control"
+            placeholder="https://www.youtube.com/embed/..."
+          />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Descripción</label
+          ><textarea id="description" class="form-control" rows="4"></textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Géneros</label>
+          <div id="genres" class="row g-2"></div>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <button id="create" class="btn btn-primary">Publicar</button>
+        <span id="created" class="ms-3 text-success fw-semibold"></span>
+      </div>
+
+      <hr class="my-4" />
+      <h5>Subir Imágenes (luego de crear)</h5>
+      <div class="input-group mb-2" style="max-width: 520px">
+        <input id="imgfiles" type="file" class="form-control" multiple />
+        <button id="upload" class="btn btn-outline-secondary" disabled>
+          Subir
+        </button>
+      </div>
+      <div id="imgmsg" class="text-muted"></div>
+    </div>
+
+    <script src="assets/js/scripts.js"></script>
+    <script>
+      requireAdminPage();
+      let lastCode = null;
+
+      async function loadGenres() {
+        const list = await fetch(API + "/admin/genres", {
+          headers: authHeaders(false),
+        }).then((r) => r.json());
+        document.getElementById("genres").innerHTML = list
+          .map(
+            (g) => `
+        <div class="col-auto"><label class="form-check">
+          <input class="form-check-input" type="checkbox" value="${g.id}"> ${g.name}
+        </label></div>`
+          )
+          .join("");
+      }
+
+      async function createGame() {
+        const genre_ids = [
+          ...document.querySelectorAll("#genres input:checked"),
+        ].map((i) => Number(i.value));
+        const body = {
+          title: title.value.trim(),
+          platform: platform.value,
+          release_date: release_date.value || null,
+          developer: developer.value.trim(),
+          publisher: publisher.value.trim(),
+          trailer_url: trailer_url.value.trim(),
+          description: description.value.trim(),
+          steam_app_id: steam_app_id.value ? Number(steam_app_id.value) : null,
+          genre_ids,
+        };
+        const r = await fetch(API + "/admin/games", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        });
+        const j = await r.json();
+        if (!r.ok) return alert(j.error || "Error al crear");
+        lastCode = j.game_code;
+        created.textContent = "Creado con código: " + lastCode;
+        upload.disabled = false;
+      }
+
+      async function uploadImages() {
+        if (!lastCode) return alert("Primero crea el juego");
+        const fd = new FormData();
+        [...imgfiles.files].forEach((f) => fd.append("files", f));
+        const r = await fetch(`${API}/admin/games/${lastCode}/images`, {
+          method: "POST",
+          headers: { Authorization: "Bearer " + getToken() },
+          body: fd,
+        });
+        const j = await r.json();
+        if (r.ok) imgmsg.textContent = `Subidas: ${j.images.length}`;
+        else alert(j.error || "Error");
+      }
+
+      loadGenres();
+      create.onclick = createGame;
+      upload.onclick = uploadImages;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Top Games • Gaming Corner</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="css/style.css" rel="stylesheet" />
+  </head>
+  <body class="bg-light">
+    <div class="container py-4">
+      <h3 class="mb-3">Top Games</h3>
+      <div class="row row-cols-1 row-cols-md-3 g-3" id="grid"></div>
+    </div>
+
+    <script src="assets/js/scripts.js"></script>
+    <script>
+      fetch(API + "/games/top?limit=30")
+        .then((r) => r.json())
+        .then((list) => {
+          grid.innerHTML = list
+            .map((g) => {
+              const s = stars(g.avg_rating || 0);
+              const img = g.hero_image
+                ? abs(g.hero_image)
+                : "img/placeholder_600x320.png";
+              return `<div class="col"><div class="card h-100">
+    <img src="${img}" class="card-img-top" onerror="this.src='img/placeholder_600x320.png'">
+    <div class="card-body"><h5 class="card-title">${g.title}</h5>
+      <p class="card-text">${g.platform} / ${s}</p>
+      <a class="btn btn-sm btn-outline-primary" href="game.html?code=${g.game_code}">Ver</a>
+    </div></div></div>`;
+            })
+            .join("");
+        });
+    </script>
+  </body>
+</html>
