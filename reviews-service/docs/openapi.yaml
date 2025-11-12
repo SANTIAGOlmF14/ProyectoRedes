@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: Reviews Service
+  version: "1.0.0"
+servers:
+  - url: http://localhost:4000/api
+
+paths:
+  /games/{idOrCode}/comments:
+    get:
+      summary: List approved comments
+      parameters:
+        - in: path
+          name: idOrCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create comment (pending approval)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: idOrCode
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /games/{idOrCode}/rating:
+    put:
+      summary: Put rating
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: idOrCode
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+      responses:
+        '200': { description: OK }
+    get:
+      summary: Get rating info
+      parameters:
+        - in: path
+          name: idOrCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /admin/comments/pending:
+    get:
+      summary: List pending comments
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /admin/comments/approve/{id}:
+    put:
+      summary: Approve comment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+
+  /admin/comments/delete/{id}:
+    delete:
+      summary: Delete comment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
