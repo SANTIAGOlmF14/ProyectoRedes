@@ -2,6 +2,7 @@
 // ==== CONFIG ====
 const API = 'http://localhost:3000/api';
 const ORIGIN = API.replace(/\/api\/?$/, ''); // -> http://localhost:3000
+const FAVORITES_API = 'http://localhost:5000/api';
 
 
 window.API = 'http://localhost:3001/api/catalog'; // Catálogo

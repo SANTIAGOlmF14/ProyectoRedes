@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mis Favoritos • Gaming Corner</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="container py-4">
+      <h2 class="mb-4 text-center">💖 Mis Juegos Favoritos</h2>
+      <div id="favList" class="row g-3"></div>
+    </div>
+
+    <script src="assets/js/scripts.js"></script>
+    <script>
+      const FAVORITES_API = "http://localhost:5000/api";
+
+      async function loadFavorites() {
+        if (!isLogged()) {
+          alert("Debes iniciar sesión para ver tus favoritos");
+          location.href = "login.html";
+          return;
+        }
+
+        const res = await fetch(`${FAVORITES_API}/favorites`, {
+          headers: authHeaders(),
+        });
+        const data = await res.json();
+
+        const list = document.getElementById("favList");
+        if (data.length === 0) {
+          list.innerHTML = `<p class="text-center">Aún no tienes juegos favoritos ❤️</p>`;
+          return;
+        }
+
+        list.innerHTML = data
+          .map(
+            (g) => `
+            <div class="col-md-4">
+              <div class="card h-100 shadow-sm">
+                <img src="${abs(g.hero_image)}" class="card-img-top" alt="${g.title}" onerror="this.src='img/placeholder_600x320.png'">
+                <div class="card-body">
+                  <h5 class="card-title">${g.title}</h5>
+                  <p class="card-text">
+                    <small>${g.platform} • ${g.release_date?.split('T')[0]}</small>
+                  </p>
+                  <a href="game.html?code=${g.game_code}" class="btn btn-sm btn-primary">Ver detalles</a>
+                  <button class="btn btn-sm btn-danger ms-2" onclick="removeFavorite('${g.game_code}')">💔 Eliminar</button>
+                </div>
+              </div>
+            </div>`
+          )
+          .join("");
+      }
+
+      async function removeFavorite(code) {
+        const res = await fetch(`${FAVORITES_API}/favorites/${code}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        });
+        const data = await res.json();
+        alert(data.message);
+        loadFavorites();
+      }
+
+      loadFavorites();
+    </script>
+  </body>
+</html>
