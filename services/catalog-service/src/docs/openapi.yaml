@@ -1,0 +1,271 @@
+openapi: 3.0.0
+info:
+  title: Catalog Service API
+  version: 1.0.0
+  description: API del microservicio de Catálogo (juegos, géneros, imágenes).
+servers:
+  - url: http://localhost:3001/api/catalog
+    description: Servidor local - catálogo
+tags:
+  - name: Games
+  - name: Genres
+  - name: Images
+security:
+  - bearerAuth: []
+
+paths:
+  /games:
+    get:
+      tags: [Games]
+      summary: Listar juegos
+      parameters:
+        - in: query; name: search; schema: { type: string }
+        - in: query; name: genre; schema: { type: string }
+        - in: query; name: platform; schema: { type: string, enum: [PC, PS, XBOX, SWI, MBL] }
+        - in: query; name: page; schema: { type: integer, default: 1 }
+        - in: query; name: limit; schema: { type: integer, default: 12 }
+      responses:
+        '200':
+          description: Lista de juegos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Game' }
+
+  /games/top:
+    get:
+      tags: [Games]
+      summary: Top juegos por promedio de reseñas
+      parameters:
+        - in: query; name: limit; schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Juegos ordenados por rating
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Game' }
+
+  /games/search-codes:
+    get:
+      tags: [Games]
+      summary: Búsqueda rápida por code/título
+      parameters:
+        - in: query; name: q; schema: { type: string }
+      responses:
+        '200':
+          description: Sugerencias
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code: { type: string }
+                    title: { type: string }
+
+  /games/{idOrCode}:
+    get:
+      tags: [Games]
+      summary: Detalle de un juego
+      parameters:
+        - in: path; name: idOrCode; required: true; schema: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Game' } } } }
+        '404': { description: No existe }
+
+  /games/{idOrCode}/images:
+    get:
+      tags: [Images]
+      summary: Listar imágenes de un juego
+      parameters:
+        - in: path; name: idOrCode; required: true; schema: { type: string }
+      responses:
+        '200':
+          description: URLs de imágenes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string, format: uri }
+
+  /games/{idOrCode}/patchnotes:
+    get:
+      tags: [Games]
+      summary: Última nota de Steam (si hay steam_app_id)
+      parameters:
+        - in: path; name: idOrCode; required: true; schema: { type: string }
+      responses:
+        '200':
+          description: Nota o null
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title: { type: string, nullable: true }
+                  contents: { type: string, nullable: true }
+                  date: { type: integer, nullable: true }
+
+  /genres:
+    get:
+      tags: [Genres]
+      summary: Listar géneros
+      responses:
+        '200':
+          description: Géneros
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Genre' }
+
+  /admin/genres:
+    get:
+      tags: [Genres]
+      summary: Listar géneros (admin)
+      security: [ { bearerAuth: [] } ]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Genres]
+      summary: Crear género
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GenreInput' }
+      responses: { '200': { description: Creado } }
+
+  /admin/genres/{id}:
+    delete:
+      tags: [Genres]
+      summary: Borrar género
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path; name: id; required: true; schema: { type: integer }
+      responses: { '200': { description: Borrado } }
+
+  /admin/games:
+    post:
+      tags: [Games]
+      summary: Crear juego
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GameCreate' }
+      responses: { '200': { description: OK } }
+
+  /admin/games/{idOrCode}:
+    put:
+      tags: [Games]
+      summary: Actualizar juego
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path; name: idOrCode; required: true; schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GameUpdate' }
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Games]
+      summary: Borrar juego
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path; name: idOrCode; required: true; schema: { type: string }
+      responses: { '200': { description: Borrado } }
+
+  /admin/games/{idOrCode}/images:
+    post:
+      tags: [Images]
+      summary: Subir imágenes (múltiples)
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path; name: idOrCode; required: true; schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items: { type: string, format: binary }
+      responses:
+        '200': { description: OK }
+
+  /admin/games/{idOrCode}/images/{file}:
+    delete:
+      tags: [Images]
+      summary: Borrar imagen
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path; name: idOrCode; required: true; schema: { type: string }
+        - in: path; name: file; required: true; schema: { type: string }
+      responses: { '200': { description: OK } }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Genre:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: "JRPG" }
+    GenreInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    Game:
+      type: object
+      properties:
+        id: { type: integer }
+        game_code: { type: string, example: "SWI-TOTK-2023" }
+        title: { type: string }
+        slug: { type: string }
+        platform: { type: string, enum: [PC, PS, XBOX, SWI, MBL] }
+        developer: { type: string }
+        publisher: { type: string }
+        release_date: { type: string, format: date }
+        trailer_url: { type: string }
+        hero_image: { type: string }
+        description: { type: string }
+        steam_app_id: { type: integer, nullable: true }
+        avg_rating_cache: { type: number, format: float }
+        created_at: { type: string, format: date-time }
+        avg_rating: { type: number, format: float, nullable: true }
+
+    GameCreate:
+      type: object
+      required: [title, platform, release_date]
+      properties:
+        title: { type: string }
+        platform: { type: string, enum: [PC, PS, XBOX, SWI, MBL] }
+        release_date: { type: string, format: date }
+        developer: { type: string }
+        publisher: { type: string }
+        trailer_url: { type: string }
+        description: { type: string }
+        steam_app_id: { type: integer, nullable: true }
+        genre_ids:
+          type: array
+          items: { type: integer }
+
+    GameUpdate:
+      allOf:
+        - $ref: '#/components/schemas/GameCreate'
