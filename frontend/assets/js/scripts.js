@@ -1,6 +1,11 @@
+
 // ==== CONFIG ====
 const API = 'http://localhost:3000/api';
 const ORIGIN = API.replace(/\/api\/?$/, ''); // -> http://localhost:3000
+
+
+window.API = 'http://localhost:3001/api/catalog'; // Catálogo
+window.REVIEWS_API = 'http://localhost:4000/api';  // Reseñas
 
 function abs(u){
   if (!u) return u;
@@ -9,6 +14,7 @@ function abs(u){
 
 // ==== AUTH HELPERS ====
 function getToken() { return localStorage.getItem('token') || ''; }
+function abs(u){ return u?.startsWith('http') ? u : (location.origin + u); }
 function getRole()  { return localStorage.getItem('role')  || ''; }
 function isLogged() { return !!getToken(); }
 function isAdmin()  { return getRole() === 'admin'; }

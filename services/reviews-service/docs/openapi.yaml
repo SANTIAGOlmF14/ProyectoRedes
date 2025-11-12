@@ -15,7 +15,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
     post:
       summary: Create comment (pending approval)
       security: [{ bearerAuth: [] }]
@@ -33,7 +33,7 @@ paths:
               properties:
                 content: { type: string }
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
 
   /games/{idOrCode}/rating:
     put:
@@ -56,7 +56,7 @@ paths:
                   minimum: 1
                   maximum: 5
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
     get:
       summary: Get rating info
       parameters:
@@ -65,14 +65,14 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
 
   /admin/comments/pending:
     get:
       summary: List pending comments
       security: [{ bearerAuth: [] }]
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
 
   /admin/comments/approve/{id}:
     put:
@@ -84,7 +84,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
 
   /admin/comments/delete/{id}:
     delete:
@@ -96,7 +96,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
 
 components:
   securitySchemes:
@@ -104,3 +104,16 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  /reviews/average:
+    get:
+      summary: Average rating by game_code (batch)
+      parameters:
+        - in: query
+          name: codes
+          required: true
+          schema: { type: string }
+          description: "CSV de game_code: CODE1,CODE2"
+      responses:
+        "200":
+          description: Mapping code -> average

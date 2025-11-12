@@ -186,3 +186,31 @@ export async function deleteComment(req, res) {
     res.status(500).json({ error: 'Error al eliminar comentario' });
   }
 }
+
+// NUEVO: promedio por códigos (estable entre servicios)
+export async function averageByCodes(req, res) {
+  try {
+    const codes = (req.query.codes || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (!codes.length) return res.json({});
+
+    const [rows] = await pool.query(
+      `SELECT g.game_code AS code, ROUND(AVG(r.rating),2) AS avg
+       FROM ratings r
+       JOIN games g ON g.id = r.game_id
+       WHERE g.game_code IN ( ${codes.map(()=>'?').join(',')} )
+       GROUP BY g.game_code`,
+      codes
+    );
+
+    const out = {};
+    for (const r of rows) out[r.code] = Number(r.avg);
+    res.json(out);
+  } catch (e) {
+    console.error('averageByCodes error', e);
+    res.json({});
+  }
+}

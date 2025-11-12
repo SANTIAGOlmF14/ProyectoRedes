@@ -1,49 +1,45 @@
 import { pool } from '../utils/db.js';
 import fetch from 'node-fetch';
 
-// Helper opcional: pedir promedios al MS de Reseñas
-async function fetchAverageMap(gameIds) {
-  const base = process.env.REVIEWS_URL; // p.ej. http://localhost:3003
-  if (!base || !gameIds.length) return {};
+// Cambiar el helper a "codes"
+async function fetchAverageMapByCodes(codes) {
+  const base = process.env.REVIEWS_URL;
+  if (!base || !codes.length) return {};
   try {
-    const url = `${base}/api/reviews/average?ids=${encodeURIComponent(gameIds.join(','))}`;
+    const url = `${base}/reviews/average?codes=${encodeURIComponent(codes.join(','))}`;
     const r = await fetch(url);
     if (!r.ok) return {};
-    const data = await r.json(); // { [gameId]: 4.2, ... }
-    return data || {};
+    return await r.json(); // { CODE: 4.2, ... }
   } catch { return {}; }
 }
 
 export async function listGames(req, res) {
-  const { search = '', genre, platform, page = 1, limit = 12 } = req.query;
-  const off = (Number(page) - 1) * Number(limit);
+  const { search='', genre, platform, page=1, limit=12 } = req.query;
+  const off = (Number(page)-1) * Number(limit);
 
   let sql = `
     SELECT DISTINCT g.*
     FROM games g
     LEFT JOIN games_genres gg ON gg.game_id=g.id
-    LEFT JOIN genres ge ON ge.id=gg.genre_id
+    LEFT JOIN genres ge      ON ge.id=gg.genre_id
     WHERE g.title LIKE ?
   `;
   const params = [`%${search}%`];
-
   if (platform) { sql += ' AND g.platform=?'; params.push(platform); }
   if (genre)    { sql += ' AND ge.name=?';   params.push(genre); }
-
   sql += ' ORDER BY g.release_date DESC, g.id DESC LIMIT ?,?';
   params.push(off, Number(limit));
 
   const [rows] = await pool.query(sql, params);
 
-  // Adjuntar promedios: via MS de Reseñas o usando cache local
-  const ids = rows.map(r => r.id);
-  const avgMap = await fetchAverageMap(ids);
-  const out = rows.map(r => ({
-    ...r,
-    avg_rating: avgMap[r.id] ?? Number(r.avg_rating_cache ?? 0)
-  }));
+  // Promedios desde reviews por code (fallback a cache local si no hay)
+  const codes = rows.map(r => r.game_code);
+  const avgMap = await fetchAverageMapByCodes(codes);
 
-  res.json(out);
+  res.json(rows.map(r => ({
+    ...r,
+    avg_rating: avgMap[r.game_code] ?? Number(r.avg_rating_cache ?? 0)
+  })));
 }
 
 export async function topGames(req, res) {
@@ -52,12 +48,11 @@ export async function topGames(req, res) {
     'SELECT * FROM games ORDER BY avg_rating_cache DESC, id DESC LIMIT ?',
     [limit]
   );
+  const codes = rows.map(r => r.game_code);
+  const avgMap = await fetchAverageMapByCodes(codes);
 
-  // Refino con MS de Reseñas si está disponible
-  const ids = rows.map(r => r.id);
-  const avgMap = await fetchAverageMap(ids);
   const out = rows
-    .map(r => ({ ...r, avg_rating: avgMap[r.id] ?? Number(r.avg_rating_cache ?? 0) }))
+    .map(r => ({ ...r, avg_rating: avgMap[r.game_code] ?? Number(r.avg_rating_cache ?? 0) }))
     .sort((a, b) => (b.avg_rating - a.avg_rating) || (b.id - a.id))
     .slice(0, limit);
 
