@@ -25,7 +25,7 @@
 
     <script src="assets/js/scripts.js"></script>
     <script>
-      fetch(API + "/games/top?limit=6")
+     fetch(API + "/games/top?limit=6")
         .then((r) => r.json())
         .then((list) => {
           document.getElementById("topGrid").innerHTML = list
@@ -33,22 +33,49 @@
             .join("");
         });
 
-      function card(g) {
-        const s = stars(g.avg_rating || 0);
-        const img = g.hero_image
-          ? abs(g.hero_image)
-          : "img/placeholder_600x320.png";
-        return `<div class="col"><div class="card h-100">
-    <img src="${img}" class="card-img-top" onerror="this.src='img/placeholder_600x320.png'">
-    <div class="card-body"><h5 class="card-title">${g.title}</h5>
-      <p class="card-text">${g.platform} / ${s}</p>
-      <a class="btn btn-sm btn-outline-primary" href="game.html?code=${g.game_code}">Ver</a>
-    </div></div></div>`;
+   function card(g) {
+  const s = stars(g.avg_rating || 0);
+  const img = g.hero_image
+    ? abs(g.hero_image)
+    : "img/placeholder_600x320.png";
+  return `
+  <div class="col">
+    <div class="card h-100">
+      <img src="${img}" class="card-img-top" onerror="this.src='img/placeholder_600x320.png'">
+      <div class="card-body">
+        <h5 class="card-title">${g.title}</h5>
+        <p class="card-text">${g.platform} / ${s}</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary" href="game.html?code=${g.game_code}">Ver</a>
+          <button class="btn btn-sm btn-outline-danger" onclick="addToFavorites('${g.game_code}')">
+            ❤️
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
       }
+
+      async function addToFavorites(code) {
+  if (!isLogged()) {
+    alert("Debes iniciar sesión para agregar a favoritos");
+    location.href = "login.html";
+    return;
+  }
+
+  const res = await fetch(`${FAVORITES_API}/favorites/${code}`, {
+    method: "POST",
+    headers: authHeaders()
+  });
+
+  const data = await res.json();
+  alert(data.message || "Error al añadir a favoritos");
+}
 
       document.getElementById("b").onclick = () => {
         const q = document.getElementById("q").value.trim();
         fetch(API + "/games?search=" + encodeURIComponent(q))
+        
           .then((r) => r.json())
           .then((list) => {
             results.innerHTML = list.map(card).join("");
