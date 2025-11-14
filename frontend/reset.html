@@ -30,20 +30,23 @@
       go.onclick = async () => {
         err.classList.add("d-none");
         ok.classList.add("d-none");
-        const r = await fetch(API + "/auth/reset", {
+
+        const r = await fetch(USERS_API + "/auth/reset", {
           method: "POST",
-          headers: authHeaders(),
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             username: u.value.trim(),
             newPassword: np.value,
           }),
         });
+
         const j = await r.json().catch(() => ({}));
         if (!r.ok) {
           err.textContent = j.error || "Error";
           err.classList.remove("d-none");
           return;
         }
+
         ok.classList.remove("d-none");
         setTimeout(() => (location.href = "login.html"), 1000);
       };

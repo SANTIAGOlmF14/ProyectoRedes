@@ -3,14 +3,14 @@ info:
   title: Favorites Service
   version: "1.0.0"
 servers:
-  - url: http://localhost:5000/api
+  - url: http://localhost:4500/api
 paths:
   /favorites:
     get:
       summary: Listar favoritos del usuario autenticado
       security: [{ bearerAuth: [] }]
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
   /favorites/{idOrCode}:
     post:
       summary: Agregar a favoritos
@@ -21,7 +21,7 @@ paths:
           schema: { type: string }
           required: true
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
     delete:
       summary: Eliminar de favoritos
       security: [{ bearerAuth: [] }]
@@ -31,7 +31,7 @@ paths:
           schema: { type: string }
           required: true
       responses:
-        '200': { description: OK }
+        "200": { description: OK }
 components:
   securitySchemes:
     bearerAuth:

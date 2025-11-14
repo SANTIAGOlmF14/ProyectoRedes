@@ -1,94 +1,105 @@
+// assets/js/scripts.js
 
-// ==== CONFIG ====
-// Actualizamos los valores de las URLs de tus microservicios.
-const API = 'http://localhost:3000/api';  // Catálogo
-const ORIGIN = API.replace(/\/api\/?$/, ''); // -> http://localhost:3000
-const FAVORITES_API = 'http://localhost:5000/api'; // Favoritos
+// === BASE URL de microservicios ===
+window.CATALOG_API   = 'http://localhost:3000/api';  // antes era API del backend
+window.API           = window.CATALOG_API;           // compatibilidad con código viejo
+window.USERS_API     = 'http://localhost:5000/api';  // identity-service
+window.REVIEWS_API   = 'http://localhost:4000/api';  // reviews-service
+window.FAVORITES_API = 'http://localhost:4500/api';  // favorites-service
 
-// Aquí asignamos los puertos de los microservicios correctamente
-window.API = 'http://localhost:3001/api/catalog'; // Catálogo
-window.REVIEWS_API = 'http://localhost:4000/api';  // Reseñas
-window.USERS_API = 'http://localhost:5001/api';   // **Nuevo puerto para Usuarios (5001)**
+// === Helpers de auth / token ===
+window.getToken = function () {
+  return localStorage.getItem('token') || '';
+};
 
-function abs(u){
-  if (!u) return u;
-  return /^https?:\/\//i.test(u) ? u : ORIGIN + (u.startsWith('/') ? u : '/' + u);
-}
+window.isLogged = function () {
+  return !!getToken();
+};
 
-// ==== AUTH HELPERS ====
-// Funciones para manejar el estado de autenticación del usuario
-function getToken() { return localStorage.getItem('token') || ''; }
-function getRole()  { return localStorage.getItem('role')  || ''; }
-function isLogged() { return !!getToken(); }
-function isAdmin()  { return getRole() === 'admin'; }
-
-// Genera los headers para las solicitudes (incluyendo el token si el usuario está logueado)
-function authHeaders(json = true) {
+// includeJson = true → agrega Content-Type: application/json
+window.authHeaders = function (includeJson = true) {
   const h = {};
-  if (json) h['Content-Type'] = 'application/json';
+  if (includeJson) h['Content-Type'] = 'application/json';
   const t = getToken();
   if (t) h['Authorization'] = 'Bearer ' + t;
   return h;
+};
+
+async function addToFavorites(code) {
+  if (!isLogged()) {
+    alert("Debes iniciar sesión para agregar a favoritos");
+    location.href = "login.html";
+    return;
+  }
+
+  const res = await fetch(`${FAVORITES_API}/favorites/${code}`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+
+  const data = await res.json();
+  alert(data.message || "Error al añadir a favoritos");
 }
 
-// Funciones que redirigen al usuario si no está logueado o no es admin
-function requireAuthPage() { if (!isLogged()) location.href = 'login.html'; }
-function requireAdminPage() { 
-  if (!isLogged()) location.href = 'login.html'; 
-  if (!isAdmin()) location.href = 'index.html'; 
-}
 
-// ==== UI HELPERS ====
-// Función para mostrar las estrellas en las calificaciones
-function stars(n) {
-  const x = Math.round(Number(n) || 0); 
-  return '★'.repeat(x).padEnd(5, '☆');
-}
-
-// Función para obtener la portada del juego (si existe)
-function bestCoverUrl(code, files) {
-  if (!files || !files.length) return 'img/placeholder_600x320.png';
-  const cover = files.find(f => /portada/i.test(f)) || files[0];
-  const url = (typeof cover === 'string' && cover.startsWith('/uploads/'))
-    ? cover
-    : `/uploads/${code}/${cover}`;
-  return abs(url);
-}
-
-// ==== HEADER COMÚN + BOTÓN VOLVER ====
-// Cargar el encabezado común y manejar los eventos de la UI
-(async () => {
-  const slot = document.createElement('div');
-  document.body.prepend(slot);
-  try {
-    const res = await fetch('partials/header.html');
-    slot.innerHTML = await res.text();
-    const backBtn = document.getElementById('gc-back');
-    if (backBtn) backBtn.onclick = () => (history.length > 1 ? history.back() : location.href = 'index.html');
-
+// === Navbar: back, login/logout, tab Admin ===
+(function setupHeader() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const backBtn   = document.getElementById('gc-back');
     const loginLink = document.getElementById('gc-login-link');
-    const adminTab = document.getElementById('gc-admin-tab');
+    const adminTab  = document.getElementById('gc-admin-tab');
+
+    if (backBtn) {
+      backBtn.addEventListener('click', () => history.back());
+    }
+
+    const token = getToken();
+    const role  = localStorage.getItem('role');
+
     if (loginLink) {
-      if (isLogged()) {
+      if (token) {
+        // Ya logueado → mostrar "Cerrar sesión"
         loginLink.textContent = 'Cerrar sesión';
         loginLink.href = '#';
-        loginLink.onclick = (e) => { e.preventDefault(); localStorage.clear(); location.href = 'index.html'; };
+        loginLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          location.href = 'index.html';
+        });
       } else {
+        // No logueado → "Acceder"
         loginLink.textContent = 'Acceder';
         loginLink.href = 'login.html';
       }
     }
-    if (isAdmin() && adminTab) adminTab.classList.remove('d-none');
-  } catch { }
+
+    if (adminTab) {
+      if (token && role === 'admin') adminTab.classList.remove('d-none');
+      else adminTab.classList.add('d-none');
+    }
+  });
 })();
 
-// Exponer funciones para el uso en otras partes de la app
-window.API = API;
-window.authHeaders = authHeaders;
-window.isLogged = isLogged;
-window.isAdmin = isAdmin;
-window.requireAuthPage = requireAuthPage;
-window.requireAdminPage = requireAdminPage;
-window.stars = stars;
-window.bestCoverUrl = bestCoverUrl;
-window.abs = abs;
+// === Páginas solo admin ===
+window.requireAdminPage = function () {
+  const token = getToken();
+  const role  = localStorage.getItem('role');
+  if (!token || role !== 'admin') {
+    alert('Solo administradores');
+    location.href = 'index.html';
+  }
+};
+
+// === Utilidades varias ===
+window.abs = function (url) {
+  if (!url) return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  // CATALOG_API: http://localhost:3000/api -> base http://localhost:3000
+  return window.CATALOG_API.replace(/\/api$/, '') + url;
+};
+
+window.stars = function (avg) {
+  const n = Math.round(Number(avg) || 0);
+  return n ? '⭐'.repeat(n) : 'Sin reseñas';
+};

@@ -26,33 +26,27 @@
       <div class="alert alert-danger mt-3 d-none" id="err"></div>
     </div>
     <script src="assets/js/scripts.js"></script>
+    <script src="assets/js/scripts.js"></script>
     <script>
       go.onclick = async () => {
-        // Ocultamos el mensaje de error al iniciar
         err.classList.add("d-none");
 
-        // Enviamos la solicitud de login al microservicio de usuarios (5000)
-        const r = await fetch(window.USERS_API + "/auth/login", {
+        const r = await fetch(USERS_API + "/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: u.value, password: p.value }),
         });
 
-        // Parseamos la respuesta
         const j = await r.json();
 
-        // Si la respuesta no es OK, mostramos el error
         if (!r.ok) {
-          err.textContent = j.error || "Credenciales incorrectas";  // Mostramos el error
-          err.classList.remove("d-none");  // Mostramos el div de error
+          err.textContent = j.error || "Credenciales incorrectas";
+          err.classList.remove("d-none");
           return;
         }
 
-        // Si el login es exitoso, guardamos el token y el rol en localStorage
         localStorage.setItem("token", j.token);
         localStorage.setItem("role", j.user.role);
-        
-        // Redirigimos a la página principal después del login
         location.href = "index.html";
       };
     </script>

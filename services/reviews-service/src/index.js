@@ -1,3 +1,4 @@
+// reviews-service/src/index.js
 import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
@@ -19,4 +20,3 @@ app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Reviews service listening on ${PORT}`));
-

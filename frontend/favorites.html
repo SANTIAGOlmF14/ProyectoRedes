@@ -16,8 +16,6 @@
 
     <script src="assets/js/scripts.js"></script>
     <script>
-      const FAVORITES_API = "http://localhost:5000/api";
-
       async function loadFavorites() {
         if (!isLogged()) {
           alert("Debes iniciar sesión para ver tus favoritos");
@@ -41,14 +39,22 @@
             (g) => `
             <div class="col-md-4">
               <div class="card h-100 shadow-sm">
-                <img src="${abs(g.hero_image)}" class="card-img-top" alt="${g.title}" onerror="this.src='img/placeholder_600x320.png'">
+                <img src="${abs(g.hero_image)}" class="card-img-top" alt="${
+              g.title
+            }" onerror="this.src='img/placeholder_600x320.png'">
                 <div class="card-body">
                   <h5 class="card-title">${g.title}</h5>
                   <p class="card-text">
-                    <small>${g.platform} • ${g.release_date?.split('T')[0]}</small>
+                    <small>${g.platform} • ${
+              g.release_date?.split("T")[0]
+            }</small>
                   </p>
-                  <a href="game.html?code=${g.game_code}" class="btn btn-sm btn-primary">Ver detalles</a>
-                  <button class="btn btn-sm btn-danger ms-2" onclick="removeFavorite('${g.game_code}')">💔 Eliminar</button>
+                  <a href="game.html?code=${
+                    g.game_code
+                  }" class="btn btn-sm btn-primary">Ver detalles</a>
+                  <button class="btn btn-sm btn-danger ms-2" onclick="removeFavorite('${
+                    g.game_code
+                  }')">💔 Eliminar</button>
                 </div>
               </div>
             </div>`

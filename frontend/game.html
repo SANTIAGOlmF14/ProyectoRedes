@@ -15,9 +15,6 @@
     <script>
       const params = new URLSearchParams(location.search);
       const code = params.get("code");
-      const REVIEWS_API = "http://localhost:4000/api";
-      const FAVORITES_API = "http://localhost:5000/api";
-
 
       async function load() {
         const game = await fetch(`${API}/games/${code}`).then((r) => r.json());
@@ -27,12 +24,12 @@
         const notes = await fetch(`${API}/games/${code}/patchnotes`).then((r) =>
           r.json()
         );
-        const comments = await fetch(`${REVIEWS_API}/games/${code}/comments`).then(
-          (r) => r.json()
-        );
-        const ratingInfo = await fetch(`${REVIEWS_API}/games/${code}/rating`).then(
-          (r) => r.json()
-        );
+        const comments = await fetch(
+          `${REVIEWS_API}/games/${code}/comments`
+        ).then((r) => r.json());
+        const ratingInfo = await fetch(
+          `${REVIEWS_API}/games/${code}/rating`
+        ).then((r) => r.json());
 
         wrap.innerHTML = `
           <h3>${game.title}</h3>
@@ -70,7 +67,9 @@
                 </select>
                 <button class="btn btn-sm btn-primary" id="rateBtn">Actualizar</button>
                 <hr>
-                <div><b>Promedio actual:</b> ⭐ ${ratingInfo.promedio || 0} / 5</div>
+                <div><b>Promedio actual:</b> ⭐ ${
+                  ratingInfo.promedio || 0
+                } / 5</div>
                 <div><small>${ratingInfo.votos || 0} votos</small></div>
               </div></div>
 
@@ -91,20 +90,19 @@
             </div>
           </div>`;
 
+        setupFavoriteButton();
+
         // BOTÓN DE ACTUALIZAR PUNTUACIÓN
         document.getElementById("rateBtn").onclick = async () => {
           const r = await fetch(`${REVIEWS_API}/games/${code}/rating`, {
             method: "PUT",
-            headers: {
-              ...authHeaders(),
-              Authorization: "Bearer " + getToken(),
-            },
+            headers: authHeaders(), // ✅ ya mete Bearer token
             body: JSON.stringify({
               rating: Number(document.getElementById("rate").value),
             }),
           });
           const data = await r.json();
-          if (!r.ok) return alert("Inicia sesión");
+          if (!r.ok) return alert(data.error || "Inicia sesión");
           alert(data.message);
           location.reload();
         };
@@ -114,10 +112,7 @@
           const txt = document.getElementById("c").value;
           const r = await fetch(`${REVIEWS_API}/games/${code}/comments`, {
             method: "POST",
-            headers: {
-              ...authHeaders(),
-              Authorization: "Bearer " + getToken(),
-            },
+            headers: authHeaders(),
             body: JSON.stringify({ content: txt }),
           });
           const data = await r.json();
@@ -144,9 +139,8 @@
 
       // 🔁 Cargar reseñas pendientes (solo admin)
       async function loadPending() {
-        const token = getToken();
         const res = await fetch(`${REVIEWS_API}/admin/comments/pending`, {
-          headers: { Authorization: "Bearer " + token },
+          headers: authHeaders(false),
         });
         const data = await res.json();
         const div = document.getElementById("pendingList");
@@ -167,53 +161,52 @@
           .join("");
       }
 
-    // ==== FAVORITOS ====
-    async function toggleFavorite(add = true) {
-      if (!isLogged()) {
-        alert("Debes iniciar sesión para usar favoritos");
-        return;
+      // ==== FAVORITOS ====
+      async function toggleFavorite(add = true) {
+        if (!isLogged()) {
+          alert("Debes iniciar sesión para usar favoritos");
+          return;
+        }
+
+        const method = add ? "POST" : "DELETE";
+        const res = await fetch(`${FAVORITES_API}/favorites/${code}`, {
+          method,
+          headers: authHeaders(),
+        });
+
+        const data = await res.json();
+        alert(data.message);
       }
 
-      const method = add ? "POST" : "DELETE";
-      const res = await fetch(`${FAVORITES_API}/favorites/${code}`, {
-        method,
-        headers: authHeaders(),
-      });
+      function setupFavoriteButton() {
+        const btn = document.getElementById("favBtn");
+        if (!btn) return;
 
-      const data = await res.json();
-      alert(data.message);
-    }
-
-    // Configurar evento del botón
-    function setupFavoriteButton() {
-      const btn = document.getElementById("favBtn");
-      if (!btn) return;
-
-      btn.onclick = () => toggleFavorite(true); // puedes cambiar a false para eliminar
-    }
-
+        btn.onclick = () => toggleFavorite(true);
+      }
 
       async function approve(id) {
-        const token = getToken();
-        await fetch(`${REVIEWS_API}/admin/comments/approve/${id}`, {
+        const res = await fetch(`${REVIEWS_API}/admin/comments/approve/${id}`, {
           method: "PUT",
-          headers: { Authorization: "Bearer " + token },
+          headers: authHeaders(false),
         });
-        alert("Comentario aprobado ✅");
-        loadPending();
-        load();
+        if (res.ok) {
+          alert("Comentario aprobado ✅");
+          loadPending();
+          load();
+        }
       }
 
       async function removeC(id) {
-        const token = getToken();
-        await fetch(`${REVIEWS_API}/admin/comments/delete/${id}`, {
+        const res = await fetch(`${REVIEWS_API}/admin/comments/delete/${id}`, {
           method: "DELETE",
-          headers: { Authorization: "Bearer " + token },
+          headers: authHeaders(false),
         });
-        alert("Comentario eliminado ❌");
-        loadPending();
+        if (res.ok) {
+          alert("Comentario eliminado ❌");
+          loadPending();
+        }
       }
-      setupFavoriteButton();
       load();
     </script>
   </body>

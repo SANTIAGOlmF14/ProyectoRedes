@@ -1,5 +1,5 @@
+// reviews-service/src/controllers/reviews.controller.js
 import { pool } from '../utils/db.js';
-import jwt from 'jsonwebtoken';
 
 // 🧩 GET /api/games/:idOrCode/comments
 // Solo devuelve los comentarios APROBADOS
@@ -7,7 +7,7 @@ export async function commentsList(req, res) {
   try {
     const key = req.params.idOrCode;
     const [[g]] = await pool.query(
-      'SELECT id FROM games WHERE id=? OR game_code=?',
+      'SELECT id FROM games WHERE id=? OR game_code=? LIMIT 1',
       [key, key]
     );
     if (!g) return res.json([]);
@@ -31,27 +31,24 @@ export async function commentsList(req, res) {
 // Los usuarios crean reseñas → quedan como "pendientes" (approved=0)
 export async function commentCreate(req, res) {
   try {
-    const h = req.headers.authorization || '';
-    const token = h.startsWith('Bearer ') ? h.slice(7) : null;
-    if (!token) return res.status(401).json({ error: 'No token' });
-
-    const user = jwt.verify(token, process.env.JWT_SECRET);
     const { content } = req.body;
-    if (!content?.trim()) return res.status(400).json({ error: 'Contenido vacío' });
+    if (!content?.trim()) {
+      return res.status(400).json({ error: 'Contenido vacío' });
+    }
 
     const key = req.params.idOrCode;
     const [[g]] = await pool.query(
-      'SELECT id FROM games WHERE id=? OR game_code=?',
+      'SELECT id FROM games WHERE id=? OR game_code=? LIMIT 1',
       [key, key]
     );
     if (!g) return res.status(404).json({ error: 'Juego no existe' });
 
     // Si el usuario es admin, la reseña se aprueba automáticamente
-    const approved = user.role === 'admin' ? 1 : 0;
+    const approved = req.user.role === 'admin' ? 1 : 0;
 
     await pool.query(
       'INSERT INTO comments (user_id, game_id, content, approved) VALUES (?, ?, ?, ?)',
-      [user.id, g.id, content.trim(), approved]
+      [req.user.id, g.id, content.trim(), approved]
     );
 
     if (approved === 1) {
@@ -59,7 +56,7 @@ export async function commentCreate(req, res) {
     } else {
       res.json({
         message:
-          'Tu reseña ha sido enviada a revisión. Será visible cuando un administrador la apruebe.',
+          'Tu reseña ha sido enviada a revisión. Será visible cuando un administrador la apruebe.'
       });
     }
   } catch (err) {
@@ -80,14 +77,12 @@ export async function putRating(req, res) {
 
     const key = req.params.idOrCode;
 
-    // Verificar si el juego existe
     const [[g]] = await pool.query(
-      'SELECT id FROM games WHERE id=? OR game_code=?',
+      'SELECT id FROM games WHERE id=? OR game_code=? LIMIT 1',
       [key, key]
     );
     if (!g) return res.status(404).json({ error: 'Juego no existe' });
 
-    // Insertar o actualizar el voto del usuario
     await pool.query(
       `INSERT INTO ratings (user_id, game_id, rating)
        VALUES (?, ?, ?)
@@ -97,7 +92,6 @@ export async function putRating(req, res) {
       [req.user.id, g.id, n]
     );
 
-    // Calcular nuevo promedio y cantidad de votos
     const [[stats]] = await pool.query(
       `SELECT ROUND(AVG(rating), 2) AS avg, COUNT(*) AS count
        FROM ratings
@@ -107,8 +101,8 @@ export async function putRating(req, res) {
 
     res.json({
       message: 'Puntuación actualizada correctamente ✅',
-      promedio: Number(stats.avg),
-      votos: stats.count,
+      promedio: Number(stats.avg || 0),
+      votos: stats.count
     });
   } catch (err) {
     console.error('Error en putRating:', err);
@@ -123,7 +117,7 @@ export async function ratingInfo(req, res) {
     const key = req.params.idOrCode;
 
     const [[g]] = await pool.query(
-      'SELECT id FROM games WHERE id=? OR game_code=?',
+      'SELECT id FROM games WHERE id=? OR game_code=? LIMIT 1',
       [key, key]
     );
     if (!g) return res.json({ promedio: 0, votos: 0 });
@@ -137,7 +131,7 @@ export async function ratingInfo(req, res) {
 
     res.json({
       promedio: Number(r.promedio || 0),
-      votos: Number(r.votos || 0),
+      votos: Number(r.votos || 0)
     });
   } catch (err) {
     console.error('Error en ratingInfo:', err);
@@ -187,30 +181,37 @@ export async function deleteComment(req, res) {
   }
 }
 
-// NUEVO: promedio por códigos (estable entre servicios)
-export async function averageByCodes(req, res) {
+// 🧩 GET /api/reviews/average?codes=CODE1,CODE2,...
+// Usado por el catálogo para armar su Top
+export async function averagesByCodes(req, res) {
   try {
-    const codes = (req.query.codes || '')
+    const codesStr = (req.query.codes || '').trim();
+    if (!codesStr) return res.json({});
+
+    const codes = codesStr
       .split(',')
-      .map(s => s.trim())
+      .map(c => c.trim())
       .filter(Boolean);
 
     if (!codes.length) return res.json({});
 
+    const placeholders = codes.map(() => '?').join(',');
     const [rows] = await pool.query(
-      `SELECT g.game_code AS code, ROUND(AVG(r.rating),2) AS avg
-       FROM ratings r
-       JOIN games g ON g.id = r.game_id
-       WHERE g.game_code IN ( ${codes.map(()=>'?').join(',')} )
+      `SELECT g.game_code AS code, AVG(r.rating) AS avg_rating
+       FROM games g
+       JOIN ratings r ON r.game_id = g.id
+       WHERE g.game_code IN (${placeholders})
        GROUP BY g.game_code`,
       codes
     );
 
     const out = {};
-    for (const r of rows) out[r.code] = Number(r.avg);
+    for (const row of rows) {
+      out[row.code] = Number(row.avg_rating?.toFixed(2) ?? 0);
+    }
     res.json(out);
-  } catch (e) {
-    console.error('averageByCodes error', e);
-    res.json({});
+  } catch (err) {
+    console.error('Error en averagesByCodes:', err);
+    res.status(500).json({ error: 'Error al obtener promedios' });
   }
 }
